@@ -31,21 +31,89 @@ To test with your own point cloud in LAS format:
 
 <img src="docs/gui.jpg">
 
+## Data Sets
+
+For test data sets, I recommend looking at some data sets over at [https://opentopography.org/](https://opentopography.org/). Particularly interesting are photogrammetry and terrestrial laser scans, as well as colored LIDAR data.
+* [Photogrammetry and Terrestrial Laser scans](https://portal.opentopography.org/dataCatalog?platforms=3&platforms=4&formats=0)
+* The [CA21 Bunds](https://portal.opentopography.org/datasetMetadata?otCollectionID=OT.092021.32611.1) data set is also available for download at Open Topography. For our benchmarks, we used a subset of 975 million points - we will upload this subset soon.
+
+Please note following limitations:
+* You'll need about 4.8GB GPU memory for every 100 million points. 
+* The data set needs RGB color data, which is not always available in aerial LIDAR data sets. Photogrammetry nearly always has colors, terrestrial laser scans also tend to have colors.
+
+
 ## Implementation
 
 * The relevant code is in modules/simlod/sampling_cuda_nonprogressive
 * CUDA code for LOD generation: 
-	* ```kernel.cu```, 
-	* ```split_countsort_blockwise.h.cu```
-	* All the ```voxelize_<xxx>_blockwise.cu```
-* CUDA code for point cloud rendering: ```render.cu```. Changes are immediately applied by saving this file. 
-* Host-code is in ```sampling_cuda_nonprogressive.h```
+	* [kernel.cu](./modules/simlod/sampling_cuda_nonprogressive/kernel.cu) 
+	* [split_countsort_blockwise.h.cu](modules/simlod/sampling_cuda_nonprogressive/split_countsort_blockwise.h.cu) (Name is a lie, it ended up not doing blockwise processing)
+	* [voxelize_sampleselect_first_blockwise.cu](modules/simlod/sampling_cuda_nonprogressive/voxelize_sampleselect_first_blockwise.cu)
+	* [voxelize_sampleselect_random_blockwise_globalmem.cu](modules/simlod/sampling_cuda_nonprogressive/voxelize_sampleselect_random_blockwise_globalmem.cu)
+	* [voxelize_singlecell_blockwise.cu](modules/simlod/sampling_cuda_nonprogressive/voxelize_singlecell_blockwise.cu)
+	* [voxelize_neighborhood_blockwise.cu](modules/simlod/sampling_cuda_nonprogressive/voxelize_neighborhood_blockwise.cu)
+* CUDA code for point cloud rendering: [render.cu](./modules/simlod/sampling_cuda_nonprogressive/render.cu). Changes are immediately applied by saving this file. 
+* Host-code is in [sampling_cuda_nonprogressive.h](modules/simlod/sampling_cuda_nonprogressive/sampling_cuda_nonprogressive.h)
 
 ## Algorithm Overview
 
 <img src="paper\cudalod\work\overview\overview.png">
 
 This method first splits the point cloud into leaf nodes of an octree via hierarchical counting sort, and then populates inner nodes with coarser voxelized representations of their children. Hierarchical counting sort allows splitting points into an octree with 8 levels in just two iterations over all points, and one additional iteration over points for any additional 4 octree levels. A depth of 12 suffices for all our test data sets with up to 1 billion points. 
+
+
+## Results
+
+<table>
+	<tr>
+		<th>Retz</th>
+		<th>Palmyra</th>
+		<th>Saint Roman</th>
+		<th>CA21 Bunds</th>
+	</tr>
+	<tr>
+		<td>
+			<img src="paper/cudalod/images/datasets/retz_0.jpg">
+		</td>
+		<td>
+			<img src="paper/cudalod/images/datasets/Palmyra_BelTemple0.jpg">
+		</td>
+		<td>
+			<img src="paper/cudalod/images/datasets/SaintRoman_0.jpg">
+		</td>
+		<td>
+			<img src="paper/cudalod/images/datasets/desert_far.png">
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<img src="paper/cudalod/images/datasets/retz_1.jpg">
+		</td>
+		<td>
+			<img src="paper/cudalod/images/datasets/Palmyra_BelTemple1.jpg">
+		</td>
+		<td>
+			<img src="paper/cudalod/images/datasets/SaintRoman_1.jpg">
+		</td>
+		<td>
+			<img src="paper/cudalod/images/datasets/desert_close.png">
+		</td>
+	</tr>
+</table>
+
+<img src="docs/results.png">
+
+## Acknowledgements
+
+This research has been funded by FFG project LargeClouds2BIM.
+
+The authors wish to thank [Iconem](https://iconem.com/en/) for providing data sets
+Palmyra and Saint Roman; Schloss Schönbrunn Kultur- und Betriebs GmbH, Schloss Niederweiden and [Riegl Laser Measurement
+Systems](http://www.riegl.co.at/) for providing the data set of Schloss Niederweiden; Riegl
+Laser Measurement Systems for providing the data set of the town
+of Retz; Bunds et al. and [Open Topography](https://opentopography.org/) for providing the data
+set CA21-Bunds; and the Stanford University Computer Graphics Laboratory for the [Stanford Bunny](http://graphics.stanford.edu/data/3Dscanrep/).
+
 
 ## Citation
 
@@ -60,5 +128,7 @@ Bibtex:
 	month =      feb,
 	keywords =   "point cloud rendering, level of detail, LOD",
 	URL =        "https://www.cg.tuwien.ac.at/research/publications/2023/SCHUETZ-2023-LOD/",
+	doi =        "10.48550/ARXIV.2302.14801",
+	publisher =  "arXiv"
 }
 ```
